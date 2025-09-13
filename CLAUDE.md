@@ -53,12 +53,12 @@ This is "Hermes", an Android application written in Kotlin using Android's moder
 ### Navigation Structure
 - **Single Activity**: `MainActivity` serves as the host with a navigation fragment container
 - **Fragment-based UI**: Uses Navigation Component with `nav_graph.xml`
-- **Current Navigation**: FirstFragment ↔ SecondFragment (bidirectional)
+- **Current Navigation**: TimerFragment ↔ SecondFragment (bidirectional)
 - **Navigation Host**: `R.id.nav_host_fragment_content_main` (note: there's inconsistency in the code with `nav_host_fragment_fragment_timer`)
 
 ### Key Components
 - **MainActivity.kt**: Main entry point with toolbar, FAB, and navigation setup
-- **FirstFragment.kt**: Uses View Binding pattern (`FragmentFirstBinding`)
+- **TimerFragment.kt**: Uses View Binding pattern (`FragmentTimerBinding`)
 - **SecondFragment.kt**: Standard fragment in navigation flow  
 - **TimerFragment.kt**: Newly added fragment (appears to be template-generated)
 
