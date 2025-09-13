@@ -14,6 +14,7 @@ import com.kehvyn.hermes.databinding.FragmentTimerBinding
 class TimerFragment : Fragment() {
 
     private var _binding: FragmentTimerBinding? = null
+    private var timerValue: Int = 0
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -32,9 +33,23 @@ class TimerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-//        binding.buttonFirst.setOnClickListener {
-//            findNavController().navigate(R.id.action_TimerFragment_to_SecondFragment)
-//        }
+        binding.buttonIncrement.setOnClickListener {
+            timerValue++
+            updateTimerDisplay()
+        }
+
+        binding.buttonDecrement.setOnClickListener {
+            if (timerValue > 0) {
+                timerValue--
+                updateTimerDisplay()
+            }
+        }
+
+        updateTimerDisplay()
+    }
+
+    private fun updateTimerDisplay() {
+        binding.textviewTimerDisplay.text = timerValue.toString()
     }
 
     override fun onDestroyView() {
