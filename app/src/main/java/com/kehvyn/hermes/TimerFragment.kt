@@ -89,7 +89,7 @@ class TimerFragment : Fragment() {
                 }
             }
         }
-        handler.post(timerRunnable!!)
+        handler.postDelayed(timerRunnable!!, (timerValue * 1000).toLong())
     }
 
     private fun stopTimer() {
