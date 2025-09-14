@@ -23,10 +23,16 @@ class TimerFragment : Fragment() {
     private var timerValue: Int = 23
     private val minTimerValue: Int = 3
     private val defaultTimerValue: Int = 23
+    private var repetitionValue: Int = 10
+    private val defaultRepetitionValue: Int = 10
+    private var currentRepetitionCount: Int = 0
+    private var previousNonZeroRepetitions: Int = 10
+    private val isInfiniteMode: Boolean get() = repetitionValue == 0
     
     companion object {
         private const val PREFS_NAME = "hermes_prefs"
         private const val KEY_TIMER_VALUE = "timer_value"
+        private const val KEY_REPETITION_VALUE = "repetition_value"
     }
     private var isRunning: Boolean = false
     private var handler: Handler = Handler(Looper.getMainLooper())
@@ -38,6 +44,7 @@ class TimerFragment : Fragment() {
         R.raw.ship_bell_chimes_minus_2,
         R.raw.ship_bell_chimes_minus_4
     )
+    private val completionAudioTrack = R.raw.church_bell_37120
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -70,6 +77,40 @@ class TimerFragment : Fragment() {
             }
         }
 
+        binding.buttonRepetitionIncrement.setOnClickListener {
+            if (isInfiniteMode) {
+                repetitionValue = 1
+            } else {
+                repetitionValue++
+            }
+            updateRepetitionDisplay()
+            saveRepetitionValue()
+        }
+
+        binding.buttonRepetitionDecrement.setOnClickListener {
+            if (repetitionValue > 0) {
+                if (repetitionValue == 1) {
+                    previousNonZeroRepetitions = repetitionValue
+                    repetitionValue = 0
+                } else {
+                    repetitionValue--
+                }
+                updateRepetitionDisplay()
+                saveRepetitionValue()
+            }
+        }
+
+        binding.buttonInfiniteToggle.setOnClickListener {
+            if (isInfiniteMode) {
+                repetitionValue = previousNonZeroRepetitions
+            } else {
+                previousNonZeroRepetitions = repetitionValue
+                repetitionValue = 0
+            }
+            updateRepetitionDisplay()
+            saveRepetitionValue()
+        }
+
         binding.buttonPlayPause.setOnClickListener {
             if (isRunning) {
                 stopTimer()
@@ -80,7 +121,9 @@ class TimerFragment : Fragment() {
 
         // MediaPlayer will be created per playback in playNote()
         loadTimerValue()
+        loadRepetitionValue()
         updateTimerDisplay()
+        updateRepetitionDisplay()
         updatePlayPauseButton()
     }
 
@@ -97,11 +140,22 @@ class TimerFragment : Fragment() {
         if (timerValue < minTimerValue) return
         
         isRunning = true
+        currentRepetitionCount = 0
         updatePlayPauseButton()
         
         timerRunnable = object : Runnable {
             override fun run() {
+                if (!isInfiniteMode) {
+                    currentRepetitionCount++
+                    if (currentRepetitionCount >= repetitionValue) {
+                        playCompletionSound()
+                        stopTimer()
+                        return
+                    }
+                }
+                
                 playNote()
+                
                 if (isRunning) {
                     handler.postDelayed(this, (timerValue * 1000).toLong())
                 }
@@ -130,6 +184,16 @@ class TimerFragment : Fragment() {
         }
     }
     
+    private fun playCompletionSound() {
+        val player = MediaPlayer.create(requireContext(), completionAudioTrack)
+        player?.let {
+            it.setOnCompletionListener { mp ->
+                mp.release()
+            }
+            it.start()
+        }
+    }
+    
     private fun saveTimerValue() {
         val sharedPrefs: SharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         sharedPrefs.edit().putInt(KEY_TIMER_VALUE, timerValue).apply()
@@ -138,6 +202,20 @@ class TimerFragment : Fragment() {
     private fun loadTimerValue() {
         val sharedPrefs: SharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         timerValue = sharedPrefs.getInt(KEY_TIMER_VALUE, defaultTimerValue)
+    }
+    
+    private fun saveRepetitionValue() {
+        val sharedPrefs: SharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sharedPrefs.edit().putInt(KEY_REPETITION_VALUE, repetitionValue).apply()
+    }
+    
+    private fun loadRepetitionValue() {
+        val sharedPrefs: SharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        repetitionValue = sharedPrefs.getInt(KEY_REPETITION_VALUE, defaultRepetitionValue)
+    }
+    
+    private fun updateRepetitionDisplay() {
+        binding.textviewRepetitionDisplay.text = if (isInfiniteMode) "Inf." else "x${repetitionValue.toString()}"
     }
 
     override fun onDestroyView() {
