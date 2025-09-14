@@ -1,5 +1,7 @@
 package com.kehvyn.hermes
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -20,6 +22,12 @@ class TimerFragment : Fragment() {
     private var _binding: FragmentTimerBinding? = null
     private var timerValue: Int = 23
     private val minTimerValue: Int = 3
+    private val defaultTimerValue: Int = 23
+    
+    companion object {
+        private const val PREFS_NAME = "hermes_prefs"
+        private const val KEY_TIMER_VALUE = "timer_value"
+    }
     private var isRunning: Boolean = false
     private var handler: Handler = Handler(Looper.getMainLooper())
     private var timerRunnable: Runnable? = null
@@ -51,12 +59,14 @@ class TimerFragment : Fragment() {
         binding.buttonIncrement.setOnClickListener {
             timerValue++
             updateTimerDisplay()
+            saveTimerValue()
         }
 
         binding.buttonDecrement.setOnClickListener {
             if (timerValue > minTimerValue) {
                 timerValue--
                 updateTimerDisplay()
+                saveTimerValue()
             }
         }
 
@@ -69,6 +79,7 @@ class TimerFragment : Fragment() {
         }
 
         // MediaPlayer will be created per playback in playNote()
+        loadTimerValue()
         updateTimerDisplay()
         updatePlayPauseButton()
     }
@@ -117,6 +128,16 @@ class TimerFragment : Fragment() {
             }
             it.start()
         }
+    }
+    
+    private fun saveTimerValue() {
+        val sharedPrefs: SharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sharedPrefs.edit().putInt(KEY_TIMER_VALUE, timerValue).apply()
+    }
+    
+    private fun loadTimerValue() {
+        val sharedPrefs: SharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        timerValue = sharedPrefs.getInt(KEY_TIMER_VALUE, defaultTimerValue)
     }
 
     override fun onDestroyView() {
