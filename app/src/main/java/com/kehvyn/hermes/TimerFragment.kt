@@ -18,7 +18,7 @@ import com.kehvyn.hermes.databinding.FragmentTimerBinding
 class TimerFragment : Fragment() {
 
     private var _binding: FragmentTimerBinding? = null
-    private var timerValue: Int = 3
+    private var timerValue: Int = 23
     private val minTimerValue: Int = 3
     private var isRunning: Boolean = false
     private var handler: Handler = Handler(Looper.getMainLooper())
