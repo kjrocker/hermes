@@ -67,7 +67,7 @@ class TimerFragment : Fragment() {
     }
 
     private fun updateTimerDisplay() {
-        binding.textviewTimerDisplay.text = timerValue.toString()
+        binding.textviewTimerDisplay.text = "${timerValue}s"
     }
 
     private fun updatePlayPauseButton() {
