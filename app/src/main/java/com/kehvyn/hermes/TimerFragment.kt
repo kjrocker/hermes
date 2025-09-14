@@ -1,7 +1,6 @@
 package com.kehvyn.hermes
 
-import android.media.ToneGenerator
-import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,10 +18,11 @@ class TimerFragment : Fragment() {
 
     private var _binding: FragmentTimerBinding? = null
     private var timerValue: Int = 23
+    private val minTimerValue: Int = 3
     private var isRunning: Boolean = false
     private var handler: Handler = Handler(Looper.getMainLooper())
     private var timerRunnable: Runnable? = null
-    private var toneGenerator: ToneGenerator? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -47,7 +47,7 @@ class TimerFragment : Fragment() {
         }
 
         binding.buttonDecrement.setOnClickListener {
-            if (timerValue > 0) {
+            if (timerValue > minTimerValue) {
                 timerValue--
                 updateTimerDisplay()
             }
@@ -61,7 +61,7 @@ class TimerFragment : Fragment() {
             }
         }
 
-        toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.ship_bell_chimes)
         updateTimerDisplay()
         updatePlayPauseButton()
     }
@@ -71,12 +71,12 @@ class TimerFragment : Fragment() {
     }
 
     private fun updatePlayPauseButton() {
-        binding.buttonPlayPause.text = if (isRunning) "⏸" else "▶"
+        binding.buttonPlayPause.text = if (isRunning) "||" else "▶"
         binding.buttonPlayPause.contentDescription = if (isRunning) "Pause timer" else "Play timer"
     }
 
     private fun startTimer() {
-        if (timerValue <= 0) return
+        if (timerValue < minTimerValue) return
         
         isRunning = true
         updatePlayPauseButton()
@@ -99,14 +99,20 @@ class TimerFragment : Fragment() {
     }
 
     private fun playNote() {
-        toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
+        mediaPlayer?.let { player ->
+            if (player.isPlaying) {
+                player.seekTo(0)
+            } else {
+                player.start()
+            }
+        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         stopTimer()
-        toneGenerator?.release()
-        toneGenerator = null
+        mediaPlayer?.release()
+        mediaPlayer = null
         _binding = null
     }
 }
