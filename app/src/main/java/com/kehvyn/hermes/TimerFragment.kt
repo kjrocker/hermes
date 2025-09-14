@@ -4,6 +4,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import kotlin.random.Random
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -17,12 +18,18 @@ import com.kehvyn.hermes.databinding.FragmentTimerBinding
 class TimerFragment : Fragment() {
 
     private var _binding: FragmentTimerBinding? = null
-    private var timerValue: Int = 23
+    private var timerValue: Int = 3
     private val minTimerValue: Int = 3
     private var isRunning: Boolean = false
     private var handler: Handler = Handler(Looper.getMainLooper())
     private var timerRunnable: Runnable? = null
-    private var mediaPlayer: MediaPlayer? = null
+    private val audioTracks = listOf(
+        R.raw.ship_bell_chimes,
+        R.raw.ship_bell_chimes_plus_2,
+        R.raw.ship_bell_chimes_plus_4,
+        R.raw.ship_bell_chimes_minus_2,
+        R.raw.ship_bell_chimes_minus_4
+    )
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -61,7 +68,7 @@ class TimerFragment : Fragment() {
             }
         }
 
-        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.ship_bell_chimes)
+        // MediaPlayer will be created per playback in playNote()
         updateTimerDisplay()
         updatePlayPauseButton()
     }
@@ -99,20 +106,23 @@ class TimerFragment : Fragment() {
     }
 
     private fun playNote() {
-        mediaPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.seekTo(0)
-            } else {
-                player.start()
+        // Randomly select an audio track for this playback
+        val randomTrack = audioTracks[Random.nextInt(audioTracks.size)]
+        
+        // Create MediaPlayer for this specific playback
+        val player = MediaPlayer.create(requireContext(), randomTrack)
+        player?.let {
+            it.setOnCompletionListener { mp ->
+                mp.release()
             }
+            it.start()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         stopTimer()
-        mediaPlayer?.release()
-        mediaPlayer = null
+        // MediaPlayer instances are now created and released per playback
         _binding = null
     }
 }

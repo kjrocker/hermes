@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "Hermes", an Android application written in Kotlin using Android's modern development stack. The app uses Navigation Component for fragment-based navigation and View Binding for type-safe view access.
+This is "Hermes", an Android metronome/timer application written in Kotlin using Android's modern development stack. The app provides an interval timer that plays randomized audio chimes at user-specified intervals.
 
 **Package**: `com.kehvyn.hermes`  
 **Min SDK**: 31, **Target/Compile SDK**: 36  
@@ -50,17 +50,25 @@ This is "Hermes", an Android application written in Kotlin using Android's moder
 
 ## Architecture
 
-### Navigation Structure
-- **Single Activity**: `MainActivity` serves as the host with a navigation fragment container
-- **Fragment-based UI**: Uses Navigation Component with `nav_graph.xml`
-- **Current Navigation**: TimerFragment ↔ SecondFragment (bidirectional)
-- **Navigation Host**: `R.id.nav_host_fragment_content_main` (note: there's inconsistency in the code with `nav_host_fragment_fragment_timer`)
+### Core Application Architecture
+- **Single Activity Pattern**: `MainActivity` hosts all fragments via Navigation Component
+- **Primary Feature**: `TimerFragment` - the main metronome/timer interface
+- **Navigation**: Simple bidirectional flow between TimerFragment ↔ SecondFragment
+- **Navigation Host**: `R.id.nav_host_fragment_content_main`
 
-### Key Components
-- **MainActivity.kt**: Main entry point with toolbar, FAB, and navigation setup
-- **TimerFragment.kt**: Uses View Binding pattern (`FragmentTimerBinding`)
-- **SecondFragment.kt**: Standard fragment in navigation flow  
-- **TimerFragment.kt**: Newly added fragment (appears to be template-generated)
+### TimerFragment - Core Functionality
+The main feature is a sophisticated interval timer with:
+- **Timer Controls**: Increment/decrement buttons (3-second minimum enforced)
+- **Play/Pause**: Media controls for timer operation  
+- **Audio System**: Random selection from multiple audio tracks per tick
+- **State Management**: Proper lifecycle handling with Handler/Runnable for timing
+- **Audio Resources**: Located in `app/src/main/res/raw/` - ship bell chimes with variations
+
+### Key Technical Patterns
+- **Audio Playback**: Creates MediaPlayer per playback (not persistent) for track randomization
+- **Timer Implementation**: Handler + Runnable pattern for precise interval timing
+- **UI Layout**: Vertical LinearLayout with nested horizontal controls for timer interface
+- **Button Styling**: Transparent backgrounds with primary color text for minimal design
 
 ### View Binding
 The project uses View Binding (enabled in `build.gradle.kts`). All fragments should follow the pattern:
@@ -74,22 +82,39 @@ private val binding get() = _binding!!
 - **AndroidX Core KTX**: Modern Android development
 - **Material Design**: UI components and theming
 - **Navigation Component**: Fragment navigation (`navigation-fragment-ktx`, `navigation-ui-ktx`)
-- **ConstraintLayout**: Layout system
+- **MediaPlayer**: Audio playback system for timer chimes
+- **Handler/Looper**: Precise timing mechanism
 - **View Binding**: Type-safe view access
 
-## Important Notes
+## Audio System Architecture
 
-### Navigation Host Fragment ID Issue
-There's an inconsistency in `MainActivity.kt`:
-- Line 27: References `R.id.nav_host_fragment_fragment_timer`  
-- Line 55: References `R.id.nav_host_fragment_content_main`
+### Random Track Selection
+- Audio files stored in `app/src/main/res/raw/`
+- Hard-coded list of track resource IDs in `TimerFragment.audioTracks`
+- Each timer tick randomly selects from available tracks
+- MediaPlayer instances created per playback and auto-released
 
-Verify which ID is correct in the layout files before making navigation changes.
+### Adding New Audio Tracks
+1. Place audio file in `app/src/main/res/raw/` (Android naming: lowercase, underscores only)
+2. Add `R.raw.filename` to `audioTracks` list in TimerFragment
+3. File will be automatically included in random selection
 
-### Theme & Resources
-- App theme: `@style/Theme.Hermes`
-- App name: "Hermes" (defined in strings.xml)
-- Standard Material Design icon set used
+## Important Implementation Details
+
+### Timer Constraints  
+- **Minimum Value**: 3 seconds (prevents audio overlap issues)
+- **UI Display**: Shows values with "s" suffix (e.g., "5s")
+- **Controls**: Decrement disabled at minimum, no maximum limit
+
+### Button Styling Quirks
+- Play/pause button uses "||" for pause (not Unicode pause symbol)
+- Unicode symbols can cause Android styling issues with transparent backgrounds
+- Consistent styling: `background="@android:color/transparent"` + `textColor="?attr/colorPrimary"`
+
+### Navigation & MainActivity
+- FAB removed from MainActivity (was causing layout conflicts)
+- Uses `R.id.nav_host_fragment_content_main` consistently
+- Toolbar and navigation setup standard Android pattern
 
 ## File Structure Notes
 - Main source: `app/src/main/java/com/kehvyn/hermes/`
