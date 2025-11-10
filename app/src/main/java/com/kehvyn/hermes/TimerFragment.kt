@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.MotionEvent
 import kotlin.random.Random
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -37,6 +38,8 @@ class TimerFragment : Fragment() {
     private var isRunning: Boolean = false
     private var handler: Handler = Handler(Looper.getMainLooper())
     private var timerRunnable: Runnable? = null
+    private var autoRepeatHandler: Handler = Handler(Looper.getMainLooper())
+    private var autoRepeatRunnable: Runnable? = null
     private val audioTracks = listOf(
         R.raw.ship_bell_chimes,
         R.raw.ship_bell_chimes_plus_2,
@@ -68,6 +71,22 @@ class TimerFragment : Fragment() {
             updateTimerDisplay()
             saveTimerValue()
         }
+        
+        binding.buttonIncrement.setOnLongClickListener {
+            startAutoRepeat { 
+                timerValue++
+                updateTimerDisplay()
+                saveTimerValue()
+            }
+            true
+        }
+        
+        binding.buttonIncrement.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                stopAutoRepeat()
+            }
+            false
+        }
 
         binding.buttonDecrement.setOnClickListener {
             if (timerValue > minTimerValue) {
@@ -75,6 +94,24 @@ class TimerFragment : Fragment() {
                 updateTimerDisplay()
                 saveTimerValue()
             }
+        }
+        
+        binding.buttonDecrement.setOnLongClickListener {
+            startAutoRepeat { 
+                if (timerValue > minTimerValue) {
+                    timerValue--
+                    updateTimerDisplay()
+                    saveTimerValue()
+                }
+            }
+            true
+        }
+        
+        binding.buttonDecrement.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                stopAutoRepeat()
+            }
+            false
         }
 
         binding.buttonRepetitionIncrement.setOnClickListener {
@@ -85,6 +122,26 @@ class TimerFragment : Fragment() {
             }
             updateRepetitionDisplay()
             saveRepetitionValue()
+        }
+        
+        binding.buttonRepetitionIncrement.setOnLongClickListener {
+            startAutoRepeat { 
+                if (isInfiniteMode) {
+                    repetitionValue = 1
+                } else {
+                    repetitionValue++
+                }
+                updateRepetitionDisplay()
+                saveRepetitionValue()
+            }
+            true
+        }
+        
+        binding.buttonRepetitionIncrement.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                stopAutoRepeat()
+            }
+            false
         }
 
         binding.buttonRepetitionDecrement.setOnClickListener {
@@ -98,6 +155,29 @@ class TimerFragment : Fragment() {
                 updateRepetitionDisplay()
                 saveRepetitionValue()
             }
+        }
+        
+        binding.buttonRepetitionDecrement.setOnLongClickListener {
+            startAutoRepeat { 
+                if (repetitionValue > 0) {
+                    if (repetitionValue == 1) {
+                        previousNonZeroRepetitions = repetitionValue
+                        repetitionValue = 0
+                    } else {
+                        repetitionValue--
+                    }
+                    updateRepetitionDisplay()
+                    saveRepetitionValue()
+                }
+            }
+            true
+        }
+        
+        binding.buttonRepetitionDecrement.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                stopAutoRepeat()
+            }
+            false
         }
 
         binding.buttonInfiniteToggle.setOnClickListener {
@@ -217,10 +297,30 @@ class TimerFragment : Fragment() {
     private fun updateRepetitionDisplay() {
         binding.textviewRepetitionDisplay.text = if (isInfiniteMode) "Inf." else "x${repetitionValue.toString()}"
     }
+    
+    private fun startAutoRepeat(action: () -> Unit) {
+        stopAutoRepeat()
+        
+        autoRepeatRunnable = object : Runnable {
+            override fun run() {
+                action()
+                autoRepeatHandler.postDelayed(this, 100) // Repeat every 100ms
+            }
+        }
+        
+        // Start after initial delay of 500ms
+        autoRepeatHandler.postDelayed(autoRepeatRunnable!!, 500)
+    }
+    
+    private fun stopAutoRepeat() {
+        autoRepeatRunnable?.let { autoRepeatHandler.removeCallbacks(it) }
+        autoRepeatRunnable = null
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
         stopTimer()
+        stopAutoRepeat()
         // MediaPlayer instances are now created and released per playback
         _binding = null
     }
